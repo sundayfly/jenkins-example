@@ -1,0 +1,122 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job@1254.v3f64639b_11dd">
+  <actions>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobAction plugin="pipeline-model-definition@2.2118.v31fd5b_9944b_5"/>
+    <org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction plugin="pipeline-model-definition@2.2118.v31fd5b_9944b_5">
+      <jobProperties/>
+      <triggers/>
+      <parameters/>
+      <options/>
+    </org.jenkinsci.plugins.pipeline.modeldefinition.actions.DeclarativeJobPropertyTrackerAction>
+  </actions>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <com.syhuang.hudson.plugins.listgitbranchesparameter.ListGitBranchesParameterDefinition plugin="list-git-branches-parameter@0.0.11">
+          <name>BRANCH</name>
+          <description>分支</description>
+          <uuid>a08e9167-789c-4153-8045-5ead8ce41572</uuid>
+          <remoteURL>git@git.sundayhk.com:sunday/spring-cloud-eureka.git</remoteURL>
+          <credentialsId>eaf90346-3429-4f57-bafb-73407b632538</credentialsId>
+          <defaultValue>master</defaultValue>
+          <type>PT_BRANCH</type>
+          <tagFilter>*</tagFilter>
+          <branchFilter>refs/heads/(.*)</branchFilter>
+          <sortMode>NONE</sortMode>
+          <selectedValue>NONE</selectedValue>
+          <quickFilterEnabled>false</quickFilterEnabled>
+          <listSize>5</listSize>
+        </com.syhuang.hudson.plugins.listgitbranchesparameter.ListGitBranchesParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>REPO_URL</name>
+          <description>Git 地址</description>
+          <defaultValue>git@git.sundayhk.com:sunday/spring-cloud-eureka.git</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <hudson.model.TextParameterDefinition>
+          <name>BUILD_COMMAND</name>
+          <description>maven 构建命令</description>
+          <defaultValue>mvn clean package -DskipTests</defaultValue>
+          <trim>false</trim>
+        </hudson.model.TextParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>HARBOR_ADDRESS</name>
+          <description>Harbor仓库域名</description>
+          <defaultValue>registry.cn-hangzhou.aliyuncs.com</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>REGISTRY_DIR</name>
+          <description>Harbor仓库名称</description>
+          <defaultValue>sundayle</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>IMAGE_NAME</name>
+          <description>镜像名</description>
+          <defaultValue>spring-cloud-eureka</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>CLUSTER</name>
+          <defaultValue>test</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>KUBECONFIG_PATH</name>
+          <defaultValue>/mnt/.kube/multi-cluster.yaml</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>DEPLOY_TYPE</name>
+          <description>部署类型</description>
+          <defaultValue>deployment</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>DEPLOY_LABEL</name>
+          <description>标签</description>
+          <defaultValue>app=spring-cloud-eureka</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>CONTAINER_NAME</name>
+          <description>容器名</description>
+          <defaultValue>spring-cloud-eureka</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <com.wangyin.parameter.WHideParameterDefinition plugin="hidden-parameter@0.0.5">
+          <name>NAMESPACE</name>
+          <description>名称空间</description>
+          <defaultValue>java-test</defaultValue>
+        </com.wangyin.parameter.WHideParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>DEPLOY</name>
+          <description>是否进行部署操作</description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>false</string>
+              <string>true</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsScmFlowDefinition" plugin="workflow-cps@2803.v1a_f77ffcc773">
+    <scm class="hudson.plugins.git.GitSCM" plugin="git@4.13.0">
+      <configVersion>2</configVersion>
+      <userRemoteConfigs>
+        <hudson.plugins.git.UserRemoteConfig>
+          <url>git@git.sundayhk.com:sunday/jenkinsfile.git</url>
+          <credentialsId>eaf90346-3429-4f57-bafb-73407b632538</credentialsId>
+        </hudson.plugins.git.UserRemoteConfig>
+      </userRemoteConfigs>
+      <branches>
+        <hudson.plugins.git.BranchSpec>
+          <name>*/java-pipeline</name>
+        </hudson.plugins.git.BranchSpec>
+      </branches>
+      <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+      <submoduleCfg class="empty-list"/>
+      <extensions/>
+    </scm>
+    <scriptPath>Jenkinsfile</scriptPath>
+    <lightweight>true</lightweight>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>
