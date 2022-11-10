@@ -1,0 +1,179 @@
+pipeline {
+  agent {
+    kubernetes {
+      cloud 'kubernetes-default'
+      slaveConnectTimeout 1200
+      yaml '''
+apiVersion: v1
+kind: Pod
+spec:
+  containers:
+    - name: jnlp
+      args: [\'$(JENKINS_SECRET)\', \'$(JENKINS_NAME)\']
+      image: "jenkins/jnlp-slave:4.13.3-1-jdk11"
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+      - name: "localtime" 
+        mountPath: "/etc/localtime"
+        readOnly: false
+
+    - name: "maven"
+      command: ["cat"]
+      image: "maven:3.8.3-jdk-8-slim"
+      imagePullPolicy: "IfNotPresent"
+      tty: true
+      volumeMounts:
+        - name: "volume-maven"
+          mountPath: "/root/.m2/"
+          readOnly: false
+
+    - name: "docker"
+      command: ["cat"]
+      image: "docker:20.10.21-git"
+      imagePullPolicy: "IfNotPresent"
+      tty: true
+      volumeMounts:
+        - name: "docker-socket"
+          mountPath: "/var/run/docker.sock"
+          readOnly: false
+      
+    - name: "kubectl"
+      command: ["cat"]
+      image: "registry.cn-hangzhou.aliyuncs.com/sundayle/kubectl:self-1.17"
+      imagePullPolicy: "IfNotPresent"
+      tty: true
+      volumeMounts:
+        - name: "volume-kubeconfig"
+          mountPath: "/mnt/.kube/"
+          readOnly: false
+  
+  restartPolicy: "Never"
+  nodeSelector:
+    build: "true"
+  securityContext: {}
+  volumes:
+    - name: "localtime"
+      hostPath:
+        path: "/usr/share/zoneinfo/Asia/Shanghai"
+    - name: "docker-socket"
+      hostPath:
+        path: "/var/run/docker.sock"
+    - name: "volume-maven"
+      hostPath:
+        path: "/opt/m2"
+    - name: "volume-kubeconfig"
+      secret:
+        secretName: "multi-kube-config"
+'''
+    }
+  }
+
+  environment {
+    CommitMessage = ''
+    CommitID = ''
+    Tag = ''
+  }
+
+  stages {
+    stage('Pull Code') {
+      parallel {
+        stage('Checkout') {
+          when {
+            expression {
+              env.gitlabBranch == null
+            }
+
+          }
+          steps {
+            git(url: "${REPO_URL}", branch: "${BRANCH}", changelog: true, credentialsId: 'eaf90346-3429-4f57-bafb-73407b632538  ')
+          }
+        }
+
+        stage('Pull code by tigger') {
+          when {
+            expression {
+              env.gitlabBranch != null
+            }
+
+          }
+          steps {
+            git(url: "${REPO_URL}", branch: env.gitlabBranch, changelog: true, credentialsId: 'eaf90346-3429-4f57-bafb-73407b632538 ')
+          }
+        }
+
+      }
+    }
+
+    stage('Define Variable') {
+      steps {
+        script {
+          CommitID = sh(returnStdout: true, script: "git log -n 1 --pretty=format:'%h'").trim()
+          CommitMessage = sh(returnStdout: true, script: "git log -1 --pretty=format:'%h : %an  %s'").trim()
+          def curDate = sh(script: "date '+%Y%m%d-%H%M%S'", returnStdout: true).trim()
+          TAG = curDate[0..14] + "-" + CommitID + "-" + BRANCH
+        }
+
+      }
+    }
+
+    stage('Building') {
+      parallel {
+        stage('Maven build') {
+          steps {
+            container(name: 'maven') {
+              sh """echo "Building Project..."
+                            ${BUILD_COMMAND}
+              """
+            }
+
+          }
+        }
+
+        stage('Scan Code') {
+          steps {
+            sh 'echo "Scan Code"'
+          }
+        }
+
+      }
+    }
+
+    stage('Build Image') {
+      steps {
+        withCredentials(bindings: [usernamePassword(credentialsId: 'REGISTRY_USER', passwordVariable: 'Password', usernameVariable: 'Username')]) {
+          container(name: 'docker') {
+            sh """
+                        docker build -t ${HARBOR_ADDRESS}/${REGISTRY_DIR}/${IMAGE_NAME}:${TAG} .
+                        docker login -u $Username -p $Password ${HARBOR_ADDRESS}
+                        docker push ${HARBOR_ADDRESS}/${REGISTRY_DIR}/${IMAGE_NAME}:${TAG}
+            """
+          }
+
+        }
+
+      }
+    }
+
+    stage('Deploy') {
+      when {
+        expression {
+          DEPLOY != "false"
+        }
+
+      }
+      steps {
+        container(name: 'kubectl') {
+          sh """
+          cat ${KUBECONFIG_PATH} > /tmp/1.yaml
+          /usr/local/bin/kubectl config use-context ${CLUSTER} --kubeconfig=/tmp/1.yaml
+          export KUBECONFIG=/tmp/1.yaml
+          /usr/local/bin/kubectl set image ${DEPLOY_TYPE} -l ${DEPLOY_LABEL} ${CONTAINER_NAME}=${HARBOR_ADDRESS}/${REGISTRY_DIR}/${IMAGE_NAME}:${TAG} -n ${NAMESPACE}
+        """
+        }
+
+      }
+    }
+
+  }
+
+}

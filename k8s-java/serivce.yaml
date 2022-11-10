@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: spring-cloud-eureka
+  name: spring-cloud-eureka
+  namespace: java-test
+spec:
+  ports:
+  - port: 8761
+    protocol: TCP
+    targetPort: 8761
+  selector:
+    app: spring-cloud-eureka

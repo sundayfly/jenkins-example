@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: spring-cloud-eureka
+  name: spring-cloud-eureka
+  namespace: java-test
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: spring-cloud-eureka
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: spring-cloud-eureka
+    spec:
+      containers:
+      - command:
+        - java
+        - -jar
+        - /app/spring-cloud-eureka-0.0.1-SNAPSHOT.jar
+        image: registry.cn-hangzhou.aliyuncs.com/sundayle/spring-cloud-eureka:20221110-162415-f86aa39-master
+        imagePullPolicy: IfNotPresent
+        name: spring-cloud-eureka
+      imagePullSecrets:
+      - name: registrykey
+      restartPolicy: Always
+      schedulerName: default-scheduler
+  replicas: 1
